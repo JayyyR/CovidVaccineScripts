@@ -4,11 +4,12 @@ import smtplib
 import datetime
 import config
 
+lastStoreFound = ""
 while True:
 
-    zipToSearch = "10014"
+    zipToSearch = "10549"
 
-    fetchStoresRiteAidUrl = 'https://www.riteaid.com/services/ext/v2/stores/getStores?address={}&attrFilter=PREF-112&fetchMechanismVersion=2&radius=50'.format(zipToSearch)
+    fetchStoresRiteAidUrl = 'https://www.riteaid.com/services/ext/v2/stores/getStores?address={}&attrFilter=PREF-112&fetchMechanismVersion=2&radius=25'.format(zipToSearch)
     fetchStoresResponse = requests.get(fetchStoresRiteAidUrl)
 
     nearbyStores = []
@@ -19,6 +20,10 @@ while True:
         nearbyStores.append(store)
 
     storeWithApptAvailable = None
+
+    if (len(nearbyStores) == 0):
+        print("no nearby stores")
+        break
 
     for store in nearbyStores:
         apptUrl = 'https://www.riteaid.com/services/ext/v2/vaccine/checkSlots?storeNumber={}'.format(store.get('storeNumber'))
@@ -32,7 +37,8 @@ while True:
 
         if (apptAvailable != False):
             storeWithApptAvailable = store
-            break
+            if lastStoreFound != storeWithApptAvailable.get('storeNumber'):
+                break
 
         print("-------------")
 
@@ -40,10 +46,18 @@ while True:
 
     if appointmentsAvailable == False:
         print("none available")
+        lastStoreFound = ""
     else:
         print("appointments available")
 
-        storeAddress = "{}, {}, {}".format(storeWithApptAvailable.get('address'), storeWithApptAvailable.get('city'), storeWithApptAvailable.get('state'))
+        if (lastStoreFound == storeWithApptAvailable.get('storeNumber')):
+            print("same store found")
+            time.sleep(20)
+            continue
+
+        lastStoreFound = storeWithApptAvailable.get('storeNumber')
+
+        storeAddress = "{}, {}, {}, {}".format(storeWithApptAvailable.get('address'), storeWithApptAvailable.get('city'), storeWithApptAvailable.get('state'), storeWithApptAvailable.get('zipcode'))
         print("Found store: {}".format(storeAddress))
         
 
